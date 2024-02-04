@@ -5,6 +5,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 
+import javax.swing.*;
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
@@ -16,15 +17,17 @@ import java.util.Scanner;
 import static org.apache.commons.net.io.Util.copyStream;
 
 public class Main {
+    public static HttpServer main_server;
     public static File bundle_file;
-    public static Log log = new Log();
+    public static LogControls logControls;
+    public static Log log = new Log(null);
+    public static String ip = "", parent = "";
+    public static File dir;
+    public static int port = 1000;
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         //Fields
         Scanner s = new Scanner(System.in);
-        String ip = "", parent = "";
-        File dir;
-        int port = 1000;
         try {
             System.out.println("[***WELCOME TO SHARLET PC SERVER***]");
             System.out.println("[You will need your IPV4 address. To get run \"ipconfig\" in terminal]");
@@ -32,21 +35,46 @@ public class Main {
             ip = s.nextLine();
             System.out.print("Enter port to operate (e.g., 1000): ");
             port = s.nextInt();
-            s.nextLine(); // Consumption of \n left by nextInt()
-            System.out.print("Enter the target folder path: ");
-            parent = s.nextLine();
+
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("Select Target Folder");
+            fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+            int userSelection = fileChooser.showDialog(null, "Select");
+            if (userSelection == JFileChooser.APPROVE_OPTION) {
+                File selectedFolder = fileChooser.getSelectedFile();
+                parent = selectedFolder.getAbsolutePath();
+                try {
+                    log.setVisible(true);
+                    log.println("LOG: Running for directory => "+parent);
+                    startMain();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            } else {
+                System.out.print("Failed to choose target folder!");
+                System.exit(0);
+            }
+
         } catch (Exception e) {
             System.out.print("Wrong info given! Try restarting");
             System.exit(0);
         }
+    }
 
+    public static void startMain() throws IOException {
+        logControls = () -> {
+            log.println("STATUS CHANGE: Server stopped!");
+            System.out.println("Stopping...");
+            main_server.stop(0);
+            bundle_file.delete();
+        };
         dir = new File(parent);
         bundle_file = new File(dir + "\\index.html");
 
         Main main = new Main();
 
         //Turbo mode simulation
-        HttpServer main_server = HttpServer.create(new InetSocketAddress(ip, port), 0);
+        main_server = HttpServer.create(new InetSocketAddress(ip, port), 0);
 
         //File bucket
         main_server.createContext("/", main.load_bucket());
@@ -79,19 +107,17 @@ public class Main {
         main_server.start();
 
         System.out.println("Sharlet PC server running on: http://"+ip+":"+port+"/");
-        log.setVisible(true);
-        log.println("Sharlet PC server running on: http://"+ip+":"+port+"/");
+        log.println("STATUS CHANGE: Sharlet PC server running on: http://"+ip+":"+port+"/");
         Scanner scanner = new Scanner(System.in);
         System.out.print("Enter q to stop: ");
         String input = scanner.nextLine();
 
         if (input.equalsIgnoreCase("q")) {
-            log.println("Server stopped!");
+            log.println("STATUS CHANGE: Server stopped!");
             System.out.println("Stopping...");
             main_server.stop(0);
             bundle_file.delete();
         }
-
     }
 
     private HttpHandler load_file_path(File path, boolean is_main_server, String file_password){
