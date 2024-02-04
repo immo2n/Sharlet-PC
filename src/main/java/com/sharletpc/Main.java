@@ -36,14 +36,8 @@ public class Main {
             System.out.print("Enter the target folder path: ");
             parent = s.nextLine();
         } catch (Exception e) {
-            System.out.print("Wrong info given. Do you want to restart? (y/n): ");
-            s.nextLine(); //Hold exit
-            String restartChoice = s.nextLine().toLowerCase();
-            if ("yes".equals(restartChoice)) {
-                main(null);
-            } else {
-                System.exit(0);
-            }
+            System.out.print("Wrong info given! Try restarting");
+            System.exit(0);
         }
 
         dir = new File(parent);
