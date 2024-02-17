@@ -19,7 +19,6 @@ public class Log extends JFrame {
         this.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosed(WindowEvent e) {
-                super.windowClosed(e);
                 controls.onClose();
             }
         });
